@@ -13,13 +13,27 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0'
           channel: 'stable'
+          # Tidak dipin ke versi lama -> selalu pakai stable terbaru,
+          # supaya versi Kotlin/Gradle bawaan template selalu kompatibel
+          # dengan versi terbaru package (path_provider, share_plus, dll).
 
       # Membuat folder android/ios yang belum di-commit.
       # Karena pubspec.yaml & lib/ sudah ada, flutter create TIDAK akan menimpanya.
       - name: Generate platform folders
         run: flutter create --org com.example --project-name tiktok_downloader .
+
+      # Jaga-jaga: paksa versi Kotlin plugin yang lebih baru kalau template
+      # yang di-generate masih bawa versi lama (mengatasi error
+      # "Module was compiled with an incompatible version of Kotlin").
+      - name: Patch Kotlin version
+        run: |
+          if [ -f android/settings.gradle ]; then
+            sed -i -E "s/(id \"org\.jetbrains\.kotlin\.android\" version )\"[^\"]+\"/\1\"2.1.0\"/" android/settings.gradle
+          fi
+          if [ -f android/build.gradle ]; then
+            sed -i -E "s/ext\.kotlin_version = '[^']+'/ext.kotlin_version = '2.1.0'/" android/build.gradle
+          fi
 
       - name: Get dependencies
         run: flutter pub get
